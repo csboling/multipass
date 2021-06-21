@@ -113,13 +113,15 @@ CSRCS = \
        common/services/usb/class/msc/host/uhi_msc_mem.c   \
        common/services/spi/uc3_spi/spi_master.c           \
        common/services/usb/uhc/uhc.c                      \
-       common/services/clock/uc3b0_b1/sysclk.c  
+       common/services/clock/uc3b0_b1/sysclk.c
+
+include ../../../config.mk
 
 # List of assembler source files.
 ASSRCS = \
        avr32/utils/startup/trampoline_uc3.S               \
        avr32/drivers/intc/exception.S                     \
-              
+
 
 # List of include paths.
 INC_PATH = \
@@ -160,13 +162,13 @@ INC_PATH = \
        common/services/usb/class/msc/host                 \
        common/services/usb/class/hid                      \
        common/services/spi/uc3_spi                        \
-       common/utils                                       
+       common/utils
 
 # Additional search paths for libraries.
-LIB_PATH = 
+LIB_PATH =
 
 # List of libraries to use during linking.
-LIBS = 
+LIBS =
 
 # Path relative to top level directory pointing to a linker script.
 # LINKER_SCRIPT = avr32/utils/linker_scripts/at32uc3b/0256/gcc/link_uc3b0256.lds
@@ -176,20 +178,20 @@ LINKER_SCRIPT = ../src/link_uc3b0512.lds
 
 # Additional options for debugging. By default the common Makefile.in will
 # add -g3.
-DBGFLAGS = 
+DBGFLAGS =
 
 # Application optimization used during compilation and linking:
 # -O0, -O1, -O2, -O3 or -Os
 OPTIMIZATION = -Os
 
 # Extra flags to use when archiving.
-ARFLAGS = 
+ARFLAGS =
 
 # Extra flags to use when assembling.
-ASFLAGS = 
+ASFLAGS =
 
 # Extra flags to use when compiling.
-CFLAGS = 
+CFLAGS =
 
 # Extra flags to use when preprocessing.
 #
@@ -201,12 +203,12 @@ CFLAGS =
 #   BOARD      Target board in use, see boards/board.h for a list.
 #   EXT_BOARD  Optional extension board in use, see boards/board.h for a list.
 CPPFLAGS = \
-      -D BOARD=USER_BOARD -D UHD_ENABLE                             
+      -D BOARD=USER_BOARD -D UHD_ENABLE
 
 # Extra flags to use when linking
 LDFLAGS = \
         -Wl,-e,_trampoline
 
 # Pre- and post-build commands
-PREBUILD_CMD = 
-POSTBUILD_CMD = 
+PREBUILD_CMD =
+POSTBUILD_CMD =
