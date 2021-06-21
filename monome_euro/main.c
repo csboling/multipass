@@ -1,14 +1,14 @@
 // ----------------------------------------------------------------------------
 // multipass implementation for monome eurorack modules
 //
-// implements functions that provide access to the hardware (inputs, outputs, 
+// implements functions that provide access to the hardware (inputs, outputs,
 // knobs, MIDI, grid, arc etc) as defined in interface.h
 //
 // sends hardware events to controller
 //
 // provides preset management for persistent memory (flash/USB)
 //
-// to support new devices define appropriate functions in interface.h and 
+// to support new devices define appropriate functions in interface.h and
 // implement them here
 //
 // based on monome eurorack code: https://github.com/monome
@@ -289,7 +289,7 @@ void _print_s16_var(const char *str, s16 var) {
 
 void add_timed_event(u8 index, u16 ms, u8 repeat) {
     if (index > TIMED_EVENT_COUNT) return;
-    
+
     timer_remove(&event_timers[index].timer);
     event_timers[index].repeat = repeat;
     timer_add(&event_timers[index].timer, ms, &event_timer_callback, (void *)(uintptr_t)index);
@@ -352,7 +352,7 @@ u8 get_gate(u8 index) {
 // outputs
 
 u8 get_cv_output_count(void) {
-    return _HARDWARE_CV_OUTPUT_COUNT;   
+    return _HARDWARE_CV_OUTPUT_COUNT;
 }
 
 void set_cv(u8 output, s16 value) {
@@ -507,11 +507,11 @@ void note_on_v(u8 voice, s16 pitch, u16 volume) {
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_ER301, output))
             _send_er301_note(output, pitch, volume);
-            
+
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_JF, output))
             _send_jf_note(output, pitch, volume);
-            
+
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_TXO_NOTE, output)) {
             _send_txo_note(output, pitch, volume);
@@ -530,19 +530,19 @@ void note_off(u8 voice) {
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_CV_GATE, output))
             _send_note(output, 0, 0);
-        
+
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_ER301, output))
             _send_er301_note(output, 0, 0);
-        
+
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_JF, output))
             _send_jf_note(output, 0, 0);
-        
+
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_TXO_NOTE, output))
             _send_txo_note(output, 0, 0);
-        
+
     for (u8 output = 0; output < MAX_OUTPUT_COUNT; output++)
         if (_is_voice_mapped(voice, VOICE_TXO_CV_GATE, output))
             _set_txo_gate(output, 0);
@@ -750,7 +750,7 @@ void print_int(const char *str, s16 value) {
 void event_timer_callback(void* o) {
     u16 index = (uintptr_t)o;
     if (!event_timers[index].repeat) timer_remove(&event_timers[index].timer);
-    
+
     event_data[0] = index;
     control_event(TIMED_EVENT, 1);
 }
@@ -789,7 +789,7 @@ void _set_cv(u8 output, s16 value) {
     if (output >= _HARDWARE_CV_OUTPUT_COUNT || output >= MAX_CV_COUNT) return;
     cv_values[output] = value;
     u16 norm = (value < 0 ? 0 : value) >> 2;
-    
+
     if (_HARDWARE_CV_DAISY_CHAINED) {
         dac_set_value_noslew(output, value);
         dac_update_now(); // will send all 4!
@@ -856,14 +856,14 @@ void _send_er301_note(u8 output, s16 pitch, u16 volume) {
 
 void _set_er301_cv(u8 output, s16 value) {
     if (output >= MAX_ER301_OUTPUT_COUNT) return;
-    
+
     u8 d[] = { TO_CV_SET, output, (u16)value >> 8, value & 0xff };
     _i2c_leader_tx(ER301_1, d, 4);
 }
 
 void _set_er301_gate(u8 output, u8 on) {
     if (output >= MAX_ER301_OUTPUT_COUNT) return;
-    
+
     u8 d[] = { TO_TR, output, 0, on & 1 };
     _i2c_leader_tx(ER301_1, d, 4);
     _i2c_leader_tx(ER301_1, d, 4);
@@ -888,7 +888,7 @@ void _send_jf_note(u8 output, s16 pitch, u16 volume) {
     pitch += jf_transpose[output] - 3277;
     u8 d[] = { JF_VOX, output + 1, (u16)pitch >> 8, pitch & 0xff, (u16)vol >> 8, vol & 0xff };
     _i2c_leader_tx(JF_ADDR, d, 6);
-    
+
     // this should only be needed if volume is 0
     // but for some reason it works better if it's done note on as well
     _set_jf_gate(output, vol > 0);
@@ -896,7 +896,7 @@ void _send_jf_note(u8 output, s16 pitch, u16 volume) {
 
 void _set_jf_gate(u8 output, u8 on) {
     if (output >= MAX_JF_VOICE_COUNT) return;
-    
+
     uint8_t d[] = { JF_TR, output + 1, on & 1 };
     _i2c_leader_tx(JF_ADDR, d, 3);
 }
@@ -904,7 +904,7 @@ void _set_jf_gate(u8 output, u8 on) {
 // all txo comm should be done through this as it safeguards
 void _send_txo_command(u8 output, u8 command, s16 value) {
     if (output >= MAX_TXO_VOICE_COUNT) return;
-    
+
     u8 address = TELEXO + (output >> 2);
     u8 port = output & 0b11;
 
@@ -915,7 +915,7 @@ void _send_txo_command(u8 output, u8 command, s16 value) {
 void _set_txo_mode(u8 output, u8 mode) {
     if (output >= MAX_TXO_VOICE_COUNT) return;
     // if (txo_mode[output] == mode) return;
-    
+
     if (mode) {
         _send_txo_command(output, TO_ENV_ACT, 1);
     } else {
@@ -928,7 +928,7 @@ void _set_txo_mode(u8 output, u8 mode) {
 void _send_txo_note(u8 output, s16 pitch, u16 volume) {
     if (output >= MAX_TXO_VOICE_COUNT) return;
     _set_txo_mode(output, 1);
-    
+
     if (volume) {
         u32 vol = (u32)volume * (u32)txo_volume[output] / MAX_LEVEL;
         pitch += txo_transpose[output] + 4915;
@@ -949,7 +949,7 @@ void _set_txo_cv(u8 output, s16 value) {
 
 void _set_txo_gate(u8 output, u8 on) {
     if (output >= MAX_TXO_VOICE_COUNT) return;
-    
+
     _send_txo_command(output, TO_ENV, 0);
     _send_txo_command(output, TO_TR, on & 1);
 }
@@ -963,7 +963,7 @@ int16_t _get_txi_value(uint8_t index, bool shift) {
     uint8_t buffer[2];
     buffer[0] = port;
     _i2c_leader_tx(address, buffer, 1);
-    
+
     // now read
     buffer[0] = 0;
     buffer[1] = 0;
@@ -993,7 +993,7 @@ static void handler_clock_ext(s32 data) {
 }
 
 static void handler_clock_normal(s32 data) {
-    external_clock_connected = !gpio_get_pin_value(_hardware_clock_detect_pin); 
+    external_clock_connected = !gpio_get_pin_value(_hardware_clock_detect_pin);
     event_data[0] = external_clock_connected;
     control_event(MAIN_CLOCK_SWITCHED, 1);
 }
@@ -1005,16 +1005,15 @@ static void handler_tr(s32 data) {
         control_event(MAIN_CLOCK_RECEIVED, 2);
     } else {
         // gate input, only one on ansible so hardcoding
-        if (_HARDWARE_GATE_INPUT_COUNT) gate_input_values[0] = data & 1;
-        event_data[0] = 0;
-        event_data[1] = data & 1;
+        event_data[0] = data;
+        event_data[1] = gpio_get_pin_value(A00 + data);
         control_event(GATE_RECEIVED, 2);
     }
 }
 
 static void poll_inputs(void) {
     if (!_POLL_INPUTS) return;
-    
+
     u8 pressed;
     for (u8 i = 0; i < _HARDWARE_BUTTON_COUNT; i++) {
         pressed = !gpio_get_pin_value(_hardware_button_pins[i]);
@@ -1025,12 +1024,12 @@ static void poll_inputs(void) {
             control_event(BUTTON_PRESSED, 2);
         }
     }
-    
+
     if (_HARDWARE_CLOCK_INPUT && external_clock_connected != !gpio_get_pin_value(_hardware_clock_detect_pin)) {
         event_t e = { .type = kEventClockNormal };
         event_post(&e);
     }
-    
+
     if (_HARDWARE_POLL_FRONT_BUTTON) {
         if (front_button_pressed != !gpio_get_pin_value(NMI)) {
             event_t e = { .type = kEventFront, .data = gpio_get_pin_value(NMI) };
@@ -1045,15 +1044,15 @@ static void poll_inputs(void) {
 
 static void handler_front(s32 data) {
     front_button_pressed = !data;
-    
+
     timer_remove(&front_button_hold_timer);
     if (front_button_pressed)
         timer_add(
-            &front_button_hold_timer, 
-            FRONT_BUTTON_HOLD_TIME, 
-            front_button_hold_callback, 
+            &front_button_hold_timer,
+            FRONT_BUTTON_HOLD_TIME,
+            front_button_hold_callback,
             NULL);
-    
+
     event_data[0] = front_button_pressed;
     control_event(FRONT_BUTTON_PRESSED, 1);
 }
@@ -1061,7 +1060,7 @@ static void handler_front(s32 data) {
 void front_button_hold_callback(void* o) {
     timer_remove(&front_button_hold_timer);
     if (!front_button_pressed) return;
-    
+
     control_event(FRONT_BUTTON_HELD, 0);
 }
 
@@ -1089,7 +1088,7 @@ static void handler_ftdi_disconnect(s32 data) {
     timer_remove(&monome_poll_timer );
     timer_remove(&monome_refresh_timer );
     timer_remove(&grid_hold_timer);
-    
+
     u8 is_grid = grid.connected;
     grid.connected = arc.connected = 0;
 
@@ -1135,7 +1134,7 @@ static void handler_monome_refresh(s32 data) {
 static void handler_monome_grid_key(s32 data) {
     u8 x, y, z;
     monome_grid_key_parse_event_data(data, &x, &y, &z);
-    
+
     if (z) {
         grid.held_x = x;
         grid.held_y = y;
@@ -1153,7 +1152,7 @@ static void handler_monome_grid_key(s32 data) {
 
 void grid_hold_callback(void* o) {
     timer_remove(&grid_hold_timer);
-    
+
     event_data[0] = grid.held_x;
     event_data[1] = grid.held_y;
     control_event(GRID_KEY_HELD, 2);
@@ -1163,19 +1162,19 @@ static void handler_monome_ring_enc(s32 data) {
     u8 n;
     s8 delta;
     monome_ring_enc_parse_event_data(data, &n, &delta);
-    
+
     if (n >= ARC_MAX_ENCODER_COUNT) return;
-    
+
     event_data[0] = n;
     event_data[1] = delta;
     control_event(ARC_ENCODER_FINE, 2);
-    
+
     if (delta > 0){
         if (arc.delta[n] > 0) arc.delta[n] += delta; else arc.delta[n] = delta;
     } else {
         if (arc.delta[n] < 0) arc.delta[n] += delta; else arc.delta[n] = delta;
     }
-    
+
     if (abs(arc.delta[n]) > ARC_ENCODER_SENSITIVITY) {
         arc.delta[n] = 0;
         event_data[1] = delta > 0;
@@ -1242,7 +1241,7 @@ static void handler_hid_connect(int32_t data) {
     event_data[0] = 1;
 
     uhc_device_t* dev = (uhc_device_t*)(data);
-    
+
     if (dev->dev_desc.idProduct == 0x6666) {
         hid.device = hid_shnth;
         control_event(SHNTH_CONNECTED, 1);
@@ -1254,7 +1253,7 @@ static void handler_hid_connect(int32_t data) {
         hid.mod_key = hid.key = 0;
         control_event(KEYBOARD_CONNECTED, 1);
     }
-    
+
     if (_debug) {
         _print_str("\r\n");
         _print_s16_var("bcdDevice", dev->dev_desc.bcdDevice);
@@ -1285,13 +1284,13 @@ static void handler_hid_disconnect(int32_t data) {
 
 static void process_hid(void) {
     if (!hid.connected) return;
-    
+
     const s8* frame = (const s8*)hid_get_frame_data();
     u16 value;
     s16 delta;
-    
+
     if (hid.device == hid_shnth) {
-        
+
         // bars start at 0, when pressed go up to 127
         // then down to -128 then back to 0
         for (u8 i = 0; i < SHNTH_BAR_COUNT; i++) {
@@ -1306,7 +1305,7 @@ static void process_hid(void) {
                 control_event(SHNTH_BAR, 2);
             }
         }
-        
+
         // if holding shnth with buttons facing you, main button on top
         // antenna 0 is on the left, antenna 1 is on the right
         // antenna range seems to be around 0 when away
@@ -1324,7 +1323,7 @@ static void process_hid(void) {
                 control_event(SHNTH_ANTENNA, 2);
             }
         }
-        
+
         u8 bit;
         for (u8 i = 0; i < 8; i++) {
             bit = 1 << i;
@@ -1336,7 +1335,7 @@ static void process_hid(void) {
         }
         hid.frame[7] = frame[7];
     }
-    
+
     else if (hid.device == hid_keyboard) {
         hid.mod_key = frame[0];
         for (u8 i = 2; i < 8; i++) {
@@ -1400,13 +1399,13 @@ static void refresh_i2c(void) {
 static inline void assign_main_event_handlers(void) {
     for (u16 i = 0; i < kNumEventTypes; i++)
         app_event_handlers[i] = &handler_none;
-    
+
     app_event_handlers[kEventFront]            = &handler_front;
     app_event_handlers[kEventClockNormal]      = &handler_clock_normal;
     app_event_handlers[kEventClockExt]         = &handler_clock_ext;
     app_event_handlers[kEventTr]               = &handler_tr;
     app_event_handlers[kEventTrigger]          = &handler_tr;
-    
+
     app_event_handlers[kEventFtdiConnect]      = &handler_ftdi_connect;
     app_event_handlers[kEventFtdiDisconnect]   = &handler_ftdi_disconnect;
     app_event_handlers[kEventMonomeConnect]    = &handler_monome_connect;
@@ -1415,7 +1414,7 @@ static inline void assign_main_event_handlers(void) {
     app_event_handlers[kEventMonomePoll]       = &handler_monome_poll;
     app_event_handlers[kEventMonomeGridKey]    = &handler_monome_grid_key;
     app_event_handlers[kEventMonomeRingEnc]    = &handler_monome_ring_enc;
-    
+
     app_event_handlers[kEventMidiConnect]      = &handler_midi_connect;
     app_event_handlers[kEventMidiDisconnect]   = &handler_midi_disconnect;
     app_event_handlers[kEventMidiPacket]       = &handler_standard_midi_packet;
@@ -1435,22 +1434,22 @@ static void initialize_control(void) {
 
 static void process_system_events(void) {
     u64 ticks = get_ticks();
-    
+
     if (ticks - adc_timer > ADC_POLL_INTERVAL) {
         adc_timer = ticks;
         adc_convert(&adc_values);
     }
-    
+
     if (_POLL_INPUTS && (ticks - inputs_poll_timer > INPUTS_POLL_INTERVAL)) {
         poll_inputs();
         inputs_poll_timer = ticks;
     }
-    
+
     if (midi_connected && (ticks - midi_poll_timer > MIDI_POLL_INTERVAL)) {
         midi_read();
         midi_poll_timer = ticks;
     }
-    
+
     if (hid.connected && (ticks - hid_poll_timer > HID_POLL_INTERVAL)) {
         process_hid();
         hid_poll_timer = ticks;
@@ -1464,37 +1463,37 @@ static void process_system_events(void) {
 
 static void init_state(void) {
     control_initialized = 0;
-    
+
     // timers
-    
+
     adc_timer = hid_poll_timer = inputs_poll_timer = i2c_refresh_timer = midi_poll_timer = 0;
-    
+
     // event timers
-    
+
     for (u16 i = 0; i < TIMED_EVENT_COUNT; i++) {
         event_timers[i].timer.next = NULL;
         event_timers[i].timer.prev = NULL;
     }
 
     // grid
-    
+
     grid.connected = 0;
     grid.column_count = 16;
     grid.row_count = 8;
     grid.is_vb = 1;
     grid.held_x = 0;
     grid.held_y = 0;
-    
+
     // arc
-    
+
     arc.connected = 0;
     arc.encoder_count = 4;
     for (u8 i = 0; i < ARC_MAX_ENCODER_COUNT; i++) arc.delta[i] = 0;
 
     // midi
-    
+
     midi_connected = 0;
-    
+
     midi_behavior.note_on = &midi_note_on;
     midi_behavior.note_off = &midi_note_off;
     midi_behavior.channel_pressure = NULL;
@@ -1516,39 +1515,39 @@ static void init_state(void) {
     hid.shnth_init_bars = hid.shnth_init_antennas = 1;
 
     // voices
-    
+
     for (u8 i = 0; i < MAX_VOICES_COUNT; i++)
         for (u8 j = 0; j < MAX_DEVICE_COUNT; j++)
             for (u8 k = 0; k < MAX_OUTPUT_COUNT/8; k++)
                 voice_maps[i][j][k] = 0;
-                
+
     for (u8 i = 0; i < max(_HARDWARE_CV_OUTPUT_COUNT, _HARDWARE_GATE_OUTPUT_COUNT); i++)
         map_voice(i, VOICE_CV_GATE, i, 1);
 
-    // devices 
-    
+    // devices
+
     for (u8 i = 0; i < MAX_DEVICE_COUNT; i++) device_on[i] = 1;
-    
+
     for (u8 i = 0; i < MAX_TXO_VOICE_COUNT; i++) txo_mode[i] = 2;
     for (u8 i = 0; i < MAX_ER301_VOICE_COUNT; i++) er301_volume[i] = MAX_LEVEL;
     for (u8 i = 0; i < MAX_JF_VOICE_COUNT; i++) jf_volume[i] = MAX_LEVEL;
     for (u8 i = 0; i < MAX_TXO_VOICE_COUNT; i++) txo_volume[i] = MAX_LEVEL;
-    
+
     for (u8 i = 0; i < MAX_CV_COUNT; i++) cv_transpose[i] = 0;
     for (u8 i = 0; i < MAX_ER301_VOICE_COUNT; i++) er301_transpose[i] = 0;
     for (u8 i = 0; i < MAX_JF_VOICE_COUNT; i++) jf_transpose[i] = 0;
     for (u8 i = 0; i < MAX_TXO_VOICE_COUNT; i++) txo_transpose[i] = 0;
 
     // txo refresh
-    
+
     for (u8 i = 0; i < MAX_TXO_VOICE_COUNT; i++) {
         txo_refresh[i].attack_dirty = 0;
         txo_refresh[i].decay_dirty = 0;
         txo_refresh[i].waveform_dirty = 0;
     }
-    
+
     // i2c
-    
+
     is_i2c_leader = 0;
     i2c_follower_address = 0;
     jf_mode = 0;
@@ -1557,7 +1556,7 @@ static void init_state(void) {
 static void init_hardware(void) {
     // inputs
 
-    if (_HARDWARE_CLOCK_INPUT) 
+    if (_HARDWARE_CLOCK_INPUT)
         external_clock_connected = !gpio_get_pin_value(_hardware_clock_detect_pin);
 
     adc_convert(&adc_values);
@@ -1565,22 +1564,22 @@ static void init_hardware(void) {
 
     for (u8 i = 0; i < _HARDWARE_BUTTON_COUNT; i++)
         button_pressed[i] = !gpio_get_pin_value(_hardware_button_pins[i]);
-    
+
     for (u8 i = 0; i < _HARDWARE_GATE_INPUT_COUNT; i++)
         gate_input_values[i] = 0;
-    
+
     // outputs
-    
+
     for (u8 i = 0; i < min(_HARDWARE_CV_OUTPUT_COUNT, MAX_CV_COUNT); i++)
         _set_cv(i, 0);
-    
+
     for (u8 i = 0; i < min(_HARDWARE_GATE_OUTPUT_COUNT, MAX_GATE_COUNT); i++)
         _set_gate(i, 0);
-    
+
     set_clock_output(0);
 
     // screen
-    
+
     if (_HARDWARE_SCREEN) {
         for (u8 i = 0; i < SCREEN_LINE_COUNT; i++) {
             screen_lines[i].w = 128;
@@ -1594,11 +1593,11 @@ static void init_hardware(void) {
 
 int main(void) {
     init_state();
-    
+
     sysclk_init();
     init_dbg_rs232(FMCK_HZ);
     init_gpio();
-    
+
     assign_main_event_handlers();
     init_events();
     init_tc();
@@ -1609,10 +1608,10 @@ int main(void) {
     register_interrupts();
     cpu_irq_enable();
 
-    setup_dacs();    
+    setup_dacs();
     init_usb_host();
     init_monome();
-    
+
     if (_HARDWARE_SCREEN) init_oled();
     process_ii = &process_i2c;
 
