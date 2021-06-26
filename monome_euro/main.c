@@ -168,7 +168,7 @@ static u8 adc_timer, hid_poll_timer, inputs_poll_timer, i2c_refresh_timer, midi_
 static region screen_lines[SCREEN_LINE_COUNT];
 
 static u8 monome_dirty;
-static softTimer_t monome_poll_timer, monome_refresh_timer;
+static softTimer_t monome_poll_timer, monome_refresh_timer, screen_refresh_timer;
 
 static u8 midi_connected;
 static midi_behavior_t midi_behavior;
@@ -1360,7 +1360,6 @@ static void process_hid(void) {
     }
 }
 
-
 // ----------------------------------------------------------------------------
 // i2c handlers
 
@@ -1392,6 +1391,27 @@ static void refresh_i2c(void) {
     }
 }
 
+// ----------------------------------------------------------------------------
+// other handlers
+
+static void screen_refresh_callback(void* o) {
+    event_t e = { .type = kEventScreenRefresh, .data = 0 };
+    event_post(&e);
+}
+
+static void handler_screen_refresh(int32_t data) {
+    render_screen();
+}
+
+static void handler_msc_connect(int32_t data) {
+    event_data[0] = 1;
+    control_event(MASS_STORAGE_CONNECTED, 1);
+}
+
+static void handler_msc_disconnect(int32_t data) {
+    event_data[0] = 0;
+    control_event(MASS_STORAGE_CONNECTED, 1);
+}
 
 // ----------------------------------------------------------------------------
 // init / main
@@ -1405,6 +1425,7 @@ static inline void assign_main_event_handlers(void) {
     app_event_handlers[kEventClockExt]         = &handler_clock_ext;
     app_event_handlers[kEventTr]               = &handler_tr;
     app_event_handlers[kEventTrigger]          = &handler_tr;
+    app_event_handlers[kEventScreenRefresh]    = &handler_screen_refresh;
 
     app_event_handlers[kEventFtdiConnect]      = &handler_ftdi_connect;
     app_event_handlers[kEventFtdiDisconnect]   = &handler_ftdi_disconnect;
@@ -1420,6 +1441,8 @@ static inline void assign_main_event_handlers(void) {
     app_event_handlers[kEventMidiPacket]       = &handler_standard_midi_packet;
     app_event_handlers[kEventHidConnect]       = &handler_hid_connect;
     app_event_handlers[kEventHidDisconnect]    = &handler_hid_disconnect;
+    app_event_handlers[kEventMscConnect]       = &handler_msc_connect;
+    app_event_handlers[kEventMscDisconnect]    = &handler_msc_disconnect;
 }
 
 static void setup_dacs(void) {
@@ -1586,8 +1609,11 @@ static void init_hardware(void) {
             screen_lines[i].h = 8;
             screen_lines[i].x = 0;
             screen_lines[i].y = i << 3;
-            region_alloc(&screen_lines[i]);
+            screen_lines[i].len = 128 * 8;
+            screen_lines[i].data = &screen_pixels[128 * 8 * i];
+            screen_lines[i].dirty = 0;
         }
+        timer_add(&screen_refresh_timer, 63, &screen_refresh_callback, NULL);
     }
 }
 

@@ -2,9 +2,9 @@
 // multipass interface for interacting with hardware in a platform agnostic way
 // each supported platform will have its own implementation
 //
-// any apps using multipass should only talk to hardware using functions 
+// any apps using multipass should only talk to hardware using functions
 // defined here
-// 
+//
 // needs control.h for the data types used for preset management
 // ----------------------------------------------------------------------------
 
@@ -60,6 +60,7 @@
 #define SHNTH_ANTENNA           0x64 // antenna, pressure (0..255)
 #define SHNTH_BUTTON            0x65 // index, pressed/released
 
+#define MASS_STORAGE_CONNECTED  0x66
 
 // ----------------------------------------------------------------------------
 // timers
