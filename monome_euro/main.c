@@ -34,6 +34,7 @@
 #include "types.h"
 #include "events.h"
 #include "hid.h"
+#include "kbd.h"
 #include "i2c.h"
 #include "init_common.h"
 #include "midi.h"
@@ -1285,9 +1286,15 @@ static void handler_hid_disconnect(int32_t data) {
 static void process_hid(void) {
     if (!hid.connected) return;
 
+    if (!hid_get_frame_dirty()) {
+        hid_clear_frame_dirty();
+        return;
+    }
+
     const s8* frame = (const s8*)hid_get_frame_data();
     u16 value;
     s16 delta;
+
 
     if (hid.device == hid_shnth) {
 
@@ -1344,20 +1351,24 @@ static void process_hid(void) {
                     event_data[0] = hid.mod_key;
                     event_data[1] = hid.key;
                     event_data[2] = 0;
-                    control_event(KEYBOARD_KEY, 3);
+                    event_data[3] = 1;
+                    control_event(KEYBOARD_KEY, 4);
                     hid.key = 0;
                 }
             }
-            else if (hid.frame[i] != frame[i]) {
+            else if (frame_compare(frame[i]) == false) {
                 hid.key = frame[i];
                 event_data[0] = hid.mod_key;
                 event_data[1] = hid.key;
-                event_data[2] = 1;
-                control_event(KEYBOARD_KEY, 3);
+                event_data[2] = 0;
+                event_data[3] = 0;
+                control_event(KEYBOARD_KEY, 4);
             }
-            hid.frame[i] = frame[i];
         }
     }
+
+    set_old_frame(frame);
+    hid_clear_frame_dirty();
 }
 
 // ----------------------------------------------------------------------------
